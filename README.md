@@ -380,6 +380,11 @@ here are listed so they are easy to change:
 7. **LM head.** Appendix B.1 describes a SwiGLU MLP head while Table 4 lists
    `Linear(D → vocab)`. The default follows Table 4;
    `model.lm_head="swiglu"` selects the other reading.
+8. **Empty conditioning.** Unconditional generation is realised by feeding an
+   all-blank input (`--unconditional` when building the dataset) rather than
+   by zeroing `e_x` inside the model. Zeroing the embedding would also remove
+   the positional signal, which for the attention-free Sudoku core is carried
+   by learned position embeddings added to `e_x`.
 
 ## Citation
 
