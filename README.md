@@ -377,9 +377,10 @@ here are listed so they are easy to change:
    the bootstrapped target.
 3. **LPRM target.** The regression target `r` is the token accuracy of the
    trajectory's final prediction, applied to every supervision step.
-4. **Posterior conditioning.** `q_φ` conditions on `u_t + embed(y)`, matching
-   Table 4's "SwiGLU MLP for each parameter" with no separate target encoder.
-   `model.posterior_target_proj=true` adds one.
+4. **Posterior conditioning.** Table 4 lists a SwiGLU MLP per distribution
+   parameter and no separate target encoder, so `q_φ` conditions on
+   `u_t + embed(y)` with `y` entering through a plain learned embedding.
+   `model.posterior_target_proj=true` adds a SwiGLU projection on top.
 5. **`guide_only` KL.** With `σ = 0` both distributions are Dirac deltas and
    the KL is undefined; the squared distance between the means is used, which
    is its `σ → 1` limit. (The paper reports this variant fails outright.)
@@ -394,6 +395,12 @@ here are listed so they are easy to change:
    by zeroing `e_x` inside the model. Zeroing the embedding would also remove
    the positional signal, which for the attention-free Sudoku core is carried
    by learned position embeddings added to `e_x`.
+9. **Looped-TF ablation gradients.** `deep_supervision=false` runs the
+   recursion to full depth and applies the objective once at the end, but
+   gradients are still truncated to the final transition of that step. The
+   real Looped Transformer backpropagates through the whole loop; the
+   truncation keeps memory constant and isolates deep supervision as the
+   variable being ablated.
 
 ## Citation
 
