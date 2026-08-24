@@ -10,3 +10,4 @@ runs/
 *.npz
 .venv/
 .pytest_cache/
+logs/
