@@ -106,3 +106,22 @@ def test_trace_records_the_refinement_process():
 def test_trace_is_absent_by_default():
     model = make()
     assert sample_trajectories(model, torch.randint(0, 5, (2, 10))).trace is None
+
+
+def test_majority_vote_breaks_ties_towards_the_first_sample():
+    predictions = torch.tensor([[[2, 2], [1, 1], [1, 1], [2, 2]]])
+    # Both answers occur twice; the earliest one wins.
+    assert torch.equal(majority_vote(predictions), torch.tensor([[2, 2]]))
+
+
+def test_majority_vote_matches_a_reference_count():
+    torch.manual_seed(0)
+    predictions = torch.randint(0, 2, (4, 9, 3))
+    expected = []
+    for b in range(4):
+        counts = {}
+        for n in range(9):
+            key = tuple(predictions[b, n].tolist())
+            counts[key] = counts.get(key, 0) + 1
+        expected.append(max(counts.items(), key=lambda kv: kv[1])[0])
+    assert torch.equal(majority_vote(predictions), torch.tensor(expected))

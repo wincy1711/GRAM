@@ -2,3 +2,17 @@
   epoch     4 | loss 0.9298 | rec 0.6318 | kl 0.0361 | train_acc 0.066 | test_acc 0.075 | valid 0.189
   epoch     8 | loss 0.8994 | rec 0.5693 | kl 0.0356 | train_acc 0.095 | test_acc 0.132 | valid 0.302
   epoch    12 | loss 0.8882 | rec 0.4989 | kl 0.0565 | train_acc 0.183 | test_acc 0.170 | valid 0.396
+  epoch    16 | loss 0.5039 | rec 0.1267 | kl 0.0659 | train_acc 0.842 | test_acc 0.170 | valid 0.377
+
+best evaluation metrics:
+{
+  "exact_match": 0.16981132328510284,
+  "token_accuracy": 0.7578616142272949,
+  "mean_halt_step": 4.0,
+  "num_samples": 20.0,
+  "constraint_accuracy": 0.37735849056603776,
+  "conflict_edges": 0.8867924528301887,
+  "coverage": 0.3407957608429307,
+  "mean_num_solutions": 9.622641509433961,
+  "sample_diversity": 0.41792452830188676
+}

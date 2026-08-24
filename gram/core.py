@@ -159,7 +159,11 @@ class RecursiveCore(nn.Module):
 
         With ``grad_last_only`` (the paper's truncated surrogate, Eq. 14) the
         first ``T-1`` transitions are executed under ``torch.no_grad`` and only
-        the final one carries gradients.
+        the final one carries gradients.  ``collect_all`` returns every
+        transition rather than just the differentiated one; combined with
+        ``grad_last_only`` the earlier entries carry detached distributions, so
+        use it for diagnostics (``gram.evaluate.full_elbo``) rather than to
+        build a training loss.
         """
         outputs: List[TransitionOutput] = []
         n_steps = self.config.high_level_steps

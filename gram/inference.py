@@ -125,18 +125,21 @@ def sample_trajectories(model: GRAM, inputs: Tensor, puzzle_ids: Optional[Tensor
 # --------------------------------------------------------------------------- #
 def majority_vote(predictions: Tensor) -> Tensor:
     """Pick the most frequent prediction per input; ties go to the first sample."""
-    batch_size, num_samples, seq_len = predictions.shape
+    batch_size, num_samples, _ = predictions.shape
     if num_samples == 1:
         return predictions[:, 0]
-    out = predictions.new_empty(batch_size, seq_len)
+    rows = predictions.to(torch.int32).cpu().numpy()
+    winners = predictions.new_empty(batch_size, predictions.shape[-1])
     for b in range(batch_size):
         counts: dict = {}
         for n in range(num_samples):
-            key = tuple(predictions[b, n].tolist())
-            counts[key] = counts.get(key, 0) + 1
-        best = max(counts.items(), key=lambda kv: kv[1])[0]
-        out[b] = predictions.new_tensor(best)
-    return out
+            key = rows[b, n].tobytes()
+            first, count = counts.get(key, (n, 0))
+            counts[key] = (first, count + 1)
+        # ``max`` is stable, and ties break towards the earliest sample.
+        best = max(counts.values(), key=lambda item: (item[1], -item[0]))[0]
+        winners[b] = predictions[b, best]
+    return winners
 
 
 def best_of_n(predictions: Tensor, values: Optional[Tensor]) -> Tensor:

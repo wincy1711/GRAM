@@ -256,6 +256,18 @@ tests/                104 unit and integration tests
 docs/tuning.md        choosing beta, diagnosing a run
 ```
 
+## Scope
+
+This repository implements GRAM itself, plus the deterministic recursive
+models it extends — Looped Transformer, HRM/TRM and single-pass direct
+prediction are reached by config, since the paper frames them as GRAM with
+components removed (Table 3a).
+
+The *external* baselines the paper compares against — the autoregressive
+Transformer and MDLM in Table 1, and D3PM and the VAE in Table 2 and Figure 5 —
+are separate model families and are not reimplemented here. The paper lists
+their upstream repositories in Table 10.
+
 ## Deviations from the paper
 
 The paper leaves a few implementation details unspecified; the choices made
