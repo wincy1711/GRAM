@@ -114,12 +114,24 @@ python scripts/visualize_trajectories.py --checkpoint runs/nqueens8/best.pt \
 
 It also reports `spread_per_step` — the mean pairwise distance between
 trajectories at each recursion step — and how many *distinct* answers the
-samples produced. On a deterministic checkpoint both collapse:
+samples produced. On a deterministic checkpoint both collapse; on GRAM the
+spread grows with depth:
 
 ```
-"guidance": "none", "spread_per_step": [0.0, 0.0, 0.0, 0.0],
-"distinct_final_predictions": 1        # from 30 sampled trajectories
+guidance="none"    spread_per_step [0.000, 0.000, 0.000, 0.000]
+                   1 distinct prediction from 30 trajectories
+                   final loss  min 0.462  mean 0.462  max 0.462
+
+guidance="full"    spread_per_step [0.102, 0.174, 0.205, 0.229]
+                   45 distinct predictions from 50 trajectories
+                   final loss  min 0.027  mean 0.789  max 2.125
+                   final accuracy  best 1.000  mean 0.687
 ```
+
+The spread of final losses is the point of Figure 19: some trajectories get
+stuck in a bad region while others reach the solution, which is what makes
+best-of-N selection worth doing. A deterministic model has one trajectory and
+therefore one outcome, good or bad.
 
 ## Reproduced behaviour
 
