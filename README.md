@@ -309,11 +309,12 @@ Inception network on binarised MNIST.
 python -m pytest tests/ -q
 ```
 
-The suite covers layer invariants (RoPE norm preservation, RMS normalisation,
-permutation equivariance of attention), the KL closed form and its balancing,
-each guidance mode, gradient truncation, the exact solvers behind every
-dataset, ACT/LPRM behaviour, candidate selection, and an end-to-end training
-run that must reduce the loss.
+131 tests covering layer invariants (RoPE norm preservation, RMS
+normalisation, permutation equivariance of attention), the Gaussian KL closed
+form and its balancing, every guidance mode, gradient truncation, the exact
+solvers behind each dataset, ACT and LPRM behaviour, candidate selection, the
+image and ARC pipelines end to end, the deterministic mode collapse the paper
+reports for TRM, and a training run that must reduce the loss.
 
 ## Repository layout
 
@@ -329,13 +330,13 @@ gram/                 the library
   evaluate.py         metric suite, full ELBO, scaling sweeps
   inference.py        prior sampling, ACT halting, majority vote / best-of-N
   metrics.py          accuracy, coverage, conflicts, validity, IS/FID
+  analysis.py         trajectory collection, PCA projection, SVG rendering
   ema.py, utils.py    EMA weights, seeding, device selection, JSONL logging
   data/               per-task generators, loaders and tokenisation
 configs/              per-task configs, ablations/, demo/
-  analysis.py         trajectory collection, PCA projection, SVG rendering
 scripts/              build_dataset, train, evaluate, summarize,
                       visualize_trajectories, reproduce.sh
-tests/                104 unit and integration tests
+tests/                131 unit and integration tests
 docs/tuning.md        choosing beta, diagnosing a run
 ```
 
