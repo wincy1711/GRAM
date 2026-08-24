@@ -321,3 +321,35 @@ def test_bf16_training_step(nqueens_dir, tmp_path):
              "puzzle_ids": dataset.puzzle_ids[:4]}
     stats = train_batch(model, batch, config, optimizer, torch.device("cpu"), 0)
     assert np.isfinite(stats.loss) and stats.grad_norm > 0
+
+
+def test_best_checkpoint_follows_the_selected_metric(tmp_path, monkeypatch):
+    """Multi-solution tasks should not select on exact match against one reference."""
+    gc.build(tmp_path / "gc", n=6, num_instances=25, seed=1, min_solutions=2)
+    config = tiny_experiment(tmp_path / "gc", tmp_path / "run")
+    config.task = "graph_coloring"
+    config.train.epochs = 2
+    config.train.eval_interval = 1
+    config.train.select_metric = "constraint_accuracy"
+
+    # exact_match falls while constraint_accuracy rises: the second epoch wins.
+    scores = iter([
+        {"exact_match": 0.9, "constraint_accuracy": 0.1},
+        {"exact_match": 0.1, "constraint_accuracy": 0.9},
+    ])
+    monkeypatch.setattr(Trainer, "evaluate", lambda self: next(scores))
+    trainer = Trainer(config)
+    best = trainer.fit()
+    assert best["constraint_accuracy"] == 0.9
+
+
+def test_unknown_select_metric_falls_back_to_exact_match(tmp_path, monkeypatch):
+    gc.build(tmp_path / "gc", n=6, num_instances=25, seed=1, min_solutions=2)
+    config = tiny_experiment(tmp_path / "gc", tmp_path / "run")
+    config.task = "graph_coloring"
+    config.train.epochs = 2
+    config.train.eval_interval = 1
+    config.train.select_metric = "not_a_metric"
+    scores = iter([{"exact_match": 0.9}, {"exact_match": 0.1}])
+    monkeypatch.setattr(Trainer, "evaluate", lambda self: next(scores))
+    assert Trainer(config).fit()["exact_match"] == 0.9

@@ -37,7 +37,8 @@
     "log_interval": 50,
     "checkpoint_interval": 500,
     "head_rollout": "prior",
-    "epochs": 3000
+    "epochs": 3000,
+    "select_metric": "constraint_accuracy"
   },
   "eval": {
     "num_samples": 5,

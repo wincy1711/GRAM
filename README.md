@@ -225,6 +225,14 @@ Key model knobs:
 | `guidance` | `full` / `stochastic_only` / `guide_only` / `none` | `full` |
 | `hierarchical`, `deep_supervision` | architecture ablations of Table 3a | `true` |
 | `puzzle_emb_tokens` | 16 prepended puzzle tokens (ARC only) | 16 / 0 |
+| `lm_head` | `linear` (Table 4) or `swiglu` (Appendix B.1) | `linear` |
+
+`train.select_metric` decides which evaluation metric picks `best.pt`. It
+defaults to `exact_match`, but the multi-solution configs use
+`constraint_accuracy`: a prediction can satisfy every constraint of an
+N-Queens or Graph Coloring instance without matching the single reference
+solution stored for it, so selecting on exact match would discard the
+checkpoints that actually solve the task.
 
 Training defaults follow Appendix B.2: AdamW, lr `1e-4`, weight decay `1.0`,
 gradient clipping `1.0`, global batch `768`, EMA decay `0.9999`, KL balance

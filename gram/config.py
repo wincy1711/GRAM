@@ -144,6 +144,10 @@ class TrainConfig:
     log_interval: int = 10  # optimiser steps
     checkpoint_interval: int = 100  # epochs
     eval_samples: int = 1  # trajectories drawn per test input during eval
+    # Which evaluation metric selects ``best.pt``.  On multi-solution tasks
+    # ``constraint_accuracy`` is the meaningful one: a prediction can satisfy
+    # every constraint without matching the single stored reference solution.
+    select_metric: str = "exact_match"
     eval_full_elbo: bool = False
     total_steps: int = 0  # filled in by the Trainer; used by the cosine schedule
     # Mixed precision. bf16 needs no gradient scaler, which matters here because

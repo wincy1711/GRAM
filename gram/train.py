@@ -341,7 +341,10 @@ class Trainer:
                     + (f" | valid {metrics['constraint_accuracy']:.3f}"
                        if "constraint_accuracy" in metrics else "")
                 )
-                if not best or metrics.get("exact_match", 0.0) >= best.get("exact_match", 0.0):
+                key = cfg.select_metric
+                if key not in metrics:
+                    key = "exact_match"
+                if not best or metrics.get(key, 0.0) >= best.get(key, 0.0):
                     best = dict(metrics)
                     self.save_checkpoint("best.pt")
 

@@ -7,7 +7,7 @@ import torch
 from gram.config import EvalConfig, ExperimentConfig, ModelConfig, TrainConfig
 from gram.data import arc
 from gram.data.base import PuzzleDataset
-from gram.train import Trainer, build_optimizer, train_batch
+from gram.train import Trainer, train_batch
 
 
 def make_tasks(tmp_path, n_tasks=3):
