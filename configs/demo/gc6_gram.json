@@ -28,7 +28,7 @@
     "weight_decay": 1.0,
     "grad_clip": 1.0,
     "warmup_steps": 40,
-    "beta": 1.0,
+    "beta": 2.0,
     "kl_balance": 0.8,
     "ema_decay": 0.999,
     "seed": 0,
