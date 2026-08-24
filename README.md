@@ -138,9 +138,10 @@ therefore one outcome, good or bad.
 The paper's headline numbers need 8× RTX 4090 (Appendix B.2). What follows was
 produced by this code on a 4-core CPU, on the 6-vertex Graph Coloring demo:
 a 0.4 M-parameter model (`D = 128`, `K = 2`, `T = 2`, `N_sup = 4`) trained for
-40 epochs on 5.9 K examples, then evaluated 5 times independently. The *scale*
-is nothing like the paper's; the *qualitative behaviour* is the thing being
-checked.
+40 epochs on 5.9 K examples. Both arms use the same backbone, the same data and
+the same budget, differing only in `guidance`; each `best.pt` is then evaluated
+5 times independently on the 53-instance test split. The *scale* is nothing
+like the paper's; the *qualitative behaviour* is the thing being checked.
 
 **Deterministic recursion gets nothing from width, and nothing from resampling
 at all** — Figure 1(a) and Figure 4. Every number below has a standard
