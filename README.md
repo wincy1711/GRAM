@@ -385,7 +385,13 @@ here are listed so they are easy to change:
    `model.posterior_target_proj=true` adds a SwiGLU projection on top.
 5. **`guide_only` KL.** With `σ = 0` both distributions are Dirac deltas and
    the KL is undefined; the squared distance between the means is used, which
-   is its `σ → 1` limit. (The paper reports this variant fails outright.)
+   is its `σ → 1` limit. This changes the ablation's outcome: the paper reports
+   the variant failing outright (0.0 % on both tasks, from "deterministic
+   guidance conditioned on the target" overfitting), whereas here the surrogate
+   keeps `μ_θ` pinned to `μ_φ`, the mean distance collapses to ~0, and the
+   model degenerates into an ordinary deterministic RRM instead of breaking —
+   0.321 constraint accuracy on the demo, next to 0.283 for `guidance="none"`
+   at the same epoch. Worth knowing if you are comparing against Table 3b.
 6. **Halt-head loss.** Binary cross-entropy on the Q-logits, as in HRM, rather
    than the squared error literally written in Eq. (15) — `σ(q_halt)` at
    inference implies the head outputs logits.
