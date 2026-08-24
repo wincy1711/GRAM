@@ -99,6 +99,7 @@ performs on par with full GRAM on Sudoku (94.88 vs 93.96).
 | `kl` ≈ 0 and `sample_diversity` ≈ 0 | posterior collapse; GRAM ≡ deterministic RRM | lower `train.beta`, raise `train.kl_balance`, or set `train.free_bits` > 0 |
 | `mean_halt_step` = 1 with poor accuracy | ACT head is over-confident | check `train.head_rollout` is `"prior"` |
 | `sample_diversity` high, `constraint_accuracy` low | prior samples land between solution modes | more recursion (`n_supervision`, `high_level_steps`) or a longer run |
+| `constraint_accuracy` peaks mid-run then falls | the private channel is opening up as training proceeds | raise `train.beta`; make sure `train.select_metric` reflects the prior rollout so `best.pt` keeps the peak |
 
 `gram.evaluate.full_elbo` computes the untruncated bound of Eq. (13). Tracking
 it next to the training surrogate reproduces the Appendix A.3 check that
