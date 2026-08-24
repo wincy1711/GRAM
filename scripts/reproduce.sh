@@ -17,7 +17,10 @@ python scripts/build_dataset.py sudoku         --output data/sudoku_uncond --num
 # ARC-AGI and MNIST need their upstream data:
 #   python scripts/build_dataset.py arc   --output data/arc1 \
 #       --train-dir ARC-AGI/data/training --eval-dir ARC-AGI/data/evaluation
+#   python scripts/build_dataset.py arc   --output data/arc2 \
+#       --train-dir ARC-AGI-2/data/training --eval-dir ARC-AGI-2/data/evaluation
 #   python scripts/build_dataset.py mnist --output data/mnist --raw-dir /path/to/mnist
+# then:  python scripts/train.py --config configs/arc1.json   (likewise arc2, mnist)
 
 # -------------------------------------------------------- main experiments --
 for task in sudoku nqueens8 nqueens10 graph_coloring8 graph_coloring10; do

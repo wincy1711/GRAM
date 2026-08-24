@@ -2,3 +2,4 @@
   epoch     4 | loss 0.9406 | rec 0.6474 | kl 0.0379 | train_acc 0.068 | test_acc 0.094 | valid 0.245
   epoch     8 | loss 0.8844 | rec 0.5568 | kl 0.0327 | train_acc 0.108 | test_acc 0.094 | valid 0.264
   epoch    12 | loss 0.8949 | rec 0.4760 | kl 0.0565 | train_acc 0.215 | test_acc 0.226 | valid 0.434
+  epoch    16 | loss 0.5679 | rec 0.1771 | kl 0.0615 | train_acc 0.722 | test_acc 0.264 | valid 0.528
