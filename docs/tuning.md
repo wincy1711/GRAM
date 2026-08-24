@@ -63,6 +63,34 @@ into its deterministic ablation: the stochastic guidance stops carrying
 anything. Useful β values sit in the band where `prior_accuracy ≈ accuracy`
 *and* the KL is still clearly non-zero.
 
+### The gap grows over training
+
+Raising β delays the private channel rather than forbidding it. On the same
+demo at β = 2, the posterior/prior ratio widens steadily as training proceeds:
+
+| epoch | KL | posterior acc. | prior acc. | ratio |
+| --- | --- | --- | --- | --- |
+| 4 | 0.038 | 0.068 | 0.041 | 1.6× |
+| 8 | 0.033 | 0.108 | 0.059 | 1.8× |
+| 12 | 0.057 | 0.215 | 0.082 | 2.6× |
+| 16 | 0.062 | 0.722 | 0.069 | 10.4× |
+| 20 | 0.038 | 0.943 | 0.050 | 19.0× |
+| 24 | 0.021 | 0.984 | 0.041 | 23.9× |
+
+So `prior_accuracy` is worth watching for the whole run, not just at the end,
+and the checkpoint should be selected on a metric that reflects the prior
+rollout. `train.select_metric` exists for this: the multi-solution configs set
+it to `constraint_accuracy`, which on this run picks epoch 16 — the point
+where validity peaks (0.528) and before the gap opens up.
+
+Two things make this less likely at the paper's scale: much larger latent
+capacity (so a given amount of smuggled information costs proportionally more
+KL), and 48 transitions rather than 8 (so the deterministic recursion is
+strong enough that the shortcut is not the cheaper option). The paper's own
+Table 3b is consistent with this — its `stochasticity only` ablation, whose
+posterior can only modulate `σ` and therefore has a far weaker channel,
+performs on par with full GRAM on Sudoku (94.88 vs 93.96).
+
 ## Diagnosing a run
 
 | Symptom | Likely cause | Lever |
