@@ -138,6 +138,21 @@ The resulting parameter counts match the paper: **10.5M** for GRAM on N-Queens
 and Graph Coloring (paper: 10M), against **7.3M** for the same backbone with
 `guidance="none"` (paper: 7M for Looped TF / TRM).
 
+## Watching a run
+
+The training log distinguishes two accuracies, and the difference matters:
+
+* `accuracy` — the *posterior* rollout used for the ELBO. The posterior sees
+  `y`, so this looks excellent even when the model is unusable.
+* `prior_accuracy` — a rollout under the learned prior, which is the only thing
+  that exists at inference. **This is the metric to watch.**
+
+A large gap between them means the posterior has turned `ε` into a private
+channel for `y`, and the fix is a larger `train.beta`. The KL coefficient does
+not transfer between model sizes: it scales with the total latent capacity
+`D × T × N_sup`. [`docs/tuning.md`](docs/tuning.md) works through this with a
+measured sweep, and lists the other failure signatures and their levers.
+
 ## Ablations
 
 `configs/ablations/` contains both halves of Table 3, for N-Queens and Sudoku:
@@ -195,6 +210,28 @@ permutation equivariance of attention), the KL closed form and its balancing,
 each guidance mode, gradient truncation, the exact solvers behind every
 dataset, ACT/LPRM behaviour, candidate selection, and an end-to-end training
 run that must reduce the loss.
+
+## Repository layout
+
+```
+gram/                 the library
+  config.py           dataclass configs, JSON (de)serialisation, dotted overrides
+  layers.py           RMSNorm, RoPE, attention, SwiGLU, sequence-mixing SwiGLU
+  guidance.py         Gaussian heads, prior/posterior, stochastic transition
+  core.py             latent state, f_L / f_H, transitions, supervision steps
+  model.py            encoder, decoder, patch encoder, halt and value heads
+  losses.py           ELBO surrogate, KL balancing, ACT and LPRM objectives
+  train.py            deep-supervision loop, optimiser, Trainer
+  evaluate.py         metric suite, full ELBO, scaling sweeps
+  inference.py        prior sampling, ACT halting, majority vote / best-of-N
+  metrics.py          accuracy, coverage, conflicts, validity, IS/FID
+  ema.py, utils.py    EMA weights, seeding, device selection, JSONL logging
+  data/               per-task generators, loaders and tokenisation
+configs/              per-task configs, ablations/, demo/
+scripts/              build_dataset, train, evaluate, summarize, reproduce.sh
+tests/                104 unit and integration tests
+docs/tuning.md        choosing beta, diagnosing a run
+```
 
 ## Deviations from the paper
 

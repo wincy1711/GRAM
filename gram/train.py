@@ -169,12 +169,14 @@ def train_batch(model: GRAM, batch: Dict[str, Tensor], config: ExperimentConfig,
     # posterior rollout used for the ELBO sees ``y`` and is far more accurate
     # than anything the sampler will produce.
     if model.q_head is not None or model.v_head is not None:
-        if train_cfg.head_rollout == "prior":
+        # A deterministic model has no prior/posterior distinction, so the
+        # rollout just completed already is the prior rollout.
+        if train_cfg.head_rollout == "prior" and model.config.is_stochastic:
             summaries, correctness, accuracies = rollout_for_heads(
                 model, inputs, targets, puzzle_ids, n_sup, ignore_index
             )
-            stats.prior_accuracy = float(correctness[-1].mean())
-            stats.prior_token_accuracy = float(accuracies[-1].mean())
+        stats.prior_accuracy = float(correctness[-1].mean())
+        stats.prior_token_accuracy = float(accuracies[-1].mean())
         train_auxiliary_heads(model, train_cfg, summaries, correctness, accuracies, stats)
 
     if train_cfg.grad_clip > 0:
@@ -191,6 +193,7 @@ def train_batch(model: GRAM, batch: Dict[str, Tensor], config: ExperimentConfig,
 def rollout_for_heads(model: GRAM, inputs: Tensor, targets: Tensor,
                       puzzle_ids: Optional[Tensor], n_sup: int, ignore_index: int):
     """Roll the recursion out under the prior and record per-step statistics."""
+    was_training = model.training
     model.eval()
     x_embed = model.encode_input(inputs, puzzle_ids)
     state = model.initial_state(inputs.shape[0])
@@ -208,7 +211,7 @@ def rollout_for_heads(model: GRAM, inputs: Tensor, targets: Tensor,
         summaries.append(state.h[:, 0].detach())
         correctness.append((((predictions == targets) | ~mask).all(-1)).float())
         accuracies.append(((predictions == targets) & mask).sum(-1) / denominator)
-    model.train()
+    model.train(was_training)
     return summaries, correctness, accuracies
 
 

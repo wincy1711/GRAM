@@ -264,3 +264,37 @@ def test_overrides_resize_the_sequence_mixer():
 def test_cosine_schedule_is_safe_without_total_steps():
     config = TrainConfig(lr=1e-3, warmup_steps=0, lr_min_ratio=0.1)
     assert lr_at(5, config) == pytest.approx(1e-3)
+
+
+def test_deterministic_models_skip_the_extra_prior_rollout(nqueens_dir, tmp_path,
+                                                           monkeypatch):
+    """guidance='none' has no prior/posterior split, so one rollout suffices."""
+    calls = {"forward": 0}
+    original_forward = GRAM.forward
+
+    def counting_forward(self, *args, **kwargs):
+        calls["forward"] += 1
+        return original_forward(self, *args, **kwargs)
+
+    monkeypatch.setattr(GRAM, "forward", counting_forward)
+    config = tiny_experiment(nqueens_dir, tmp_path / "run", n_supervision=3,
+                             guidance="none")
+    model = GRAM(config.model)
+    optimizer = build_optimizer(model, config.train)
+    dataset = PuzzleDataset(nqueens_dir, "train")
+    batch = {"inputs": dataset.inputs[:4], "targets": dataset.targets[:4],
+             "puzzle_ids": dataset.puzzle_ids[:4]}
+    stats = train_batch(model, batch, config, optimizer, torch.device("cpu"), 0)
+    assert calls["forward"] == 3  # not 6
+    assert stats.prior_accuracy == stats.accuracy
+
+
+def test_train_batch_preserves_the_model_mode(nqueens_dir, tmp_path):
+    config = tiny_experiment(nqueens_dir, tmp_path / "run")
+    model = GRAM(config.model)
+    optimizer = build_optimizer(model, config.train)
+    dataset = PuzzleDataset(nqueens_dir, "train")
+    batch = {"inputs": dataset.inputs[:4], "targets": dataset.targets[:4],
+             "puzzle_ids": dataset.puzzle_ids[:4]}
+    train_batch(model, batch, config, optimizer, torch.device("cpu"), 0)
+    assert model.training
