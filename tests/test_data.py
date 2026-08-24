@@ -210,3 +210,30 @@ def test_arc_augmentation_multiplies_pairs(tmp_path):
     arc.build(tmp_path / "aug", task_dir, augmentations=3)
     assert len(PuzzleDataset(tmp_path / "plain", "train")) == 1
     assert len(PuzzleDataset(tmp_path / "aug", "train")) == 4
+
+
+def test_arc_augmentation_beyond_the_dihedral_group(tmp_path):
+    import json
+    task_dir = tmp_path / "tasks"
+    task_dir.mkdir()
+    (task_dir / "a.json").write_text(json.dumps({
+        "train": [{"input": [[1, 2], [3, 4]], "output": [[4, 3], [2, 1]]}],
+        "test": [],
+    }))
+    arc.build(tmp_path / "aug", task_dir, augmentations=19)
+    dataset = PuzzleDataset(tmp_path / "aug", "train")
+    assert len(dataset) == 20
+    # All 20 copies must be distinct, which needs colour permutations on top of
+    # the 8 dihedral transforms.
+    assert len({row.numpy().tobytes() for row in dataset.inputs}) == 20
+
+
+def test_arc_colour_permutation_preserves_the_background():
+    grid = [[0, 1, 2], [3, 0, 4]]
+    for transform in range(12):
+        out = arc._augment(grid, transform)
+        flat_in = [v for row in grid for v in row]
+        flat_out = [v for row in out for v in row]
+        assert flat_in.count(0) == flat_out.count(0)
+        assert sorted(set(flat_out)) == sorted(set(flat_out))  # valid colour ids
+        assert all(0 <= v < arc.NUM_COLORS for v in flat_out)

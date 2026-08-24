@@ -26,10 +26,16 @@ from .layers import SwiGLU
 
 @dataclass
 class Gaussian:
-    """A diagonal Gaussian over the perturbation ``eps``."""
+    """A diagonal Gaussian over the perturbation ``eps``.
+
+    ``degenerate`` marks the ``sigma = 0`` case produced by the
+    ``guidance="guide_only"`` ablation, so that the KL can take its Dirac limit
+    without inspecting tensor values (which would force a device sync).
+    """
 
     mean: Tensor
     std: Tensor
+    degenerate: bool = False
 
     def rsample(self, temperature: float = 1.0) -> Tensor:
         if temperature == 0.0:
@@ -44,7 +50,7 @@ class Gaussian:
         )
 
     def detach(self) -> "Gaussian":
-        return Gaussian(self.mean.detach(), self.std.detach())
+        return Gaussian(self.mean.detach(), self.std.detach(), self.degenerate)
 
 
 def gaussian_kl(q: Gaussian, p: Gaussian) -> Tensor:
@@ -103,7 +109,7 @@ class GaussianHead(nn.Module):
             std = self.min_std + (self.max_std - self.min_std) * torch.sigmoid(raw)
         else:
             std = torch.zeros_like(u)
-        return Gaussian(mean, std)
+        return Gaussian(mean, std, degenerate=not self.learn_std)
 
 
 class StochasticTransition(nn.Module):

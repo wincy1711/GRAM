@@ -138,6 +138,7 @@ class TrainConfig:
     checkpoint_interval: int = 100  # epochs
     eval_samples: int = 1  # trajectories drawn per test input during eval
     eval_full_elbo: bool = False
+    total_steps: int = 0  # filled in by the Trainer; used by the cosine schedule
     amp_dtype: str = "none"  # none | bf16 | fp16
     puzzle_emb_lr: Optional[float] = None  # separate LR for puzzle embeddings
 
@@ -224,6 +225,11 @@ def _resolve_dataclass(ftype):
 
 def apply_overrides(config: ExperimentConfig, overrides: Dict[str, Any]) -> ExperimentConfig:
     """Apply ``dotted.key=value`` style overrides in place."""
+    resizes_sequence = any(
+        key in ("model.seq_len", "model.puzzle_emb_tokens") for key in overrides
+    )
+    if resizes_sequence and "model.seq_mixer_hidden" not in overrides:
+        config.model.seq_mixer_hidden = None
     for key, value in overrides.items():
         target: Any = config
         parts = key.split(".")

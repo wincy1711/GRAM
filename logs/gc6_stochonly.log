@@ -1,0 +1,1 @@
+[gram] task=graph_coloring params=330.4K device=cpu guidance=stochastic_only N_sup=4 K=2 T=2

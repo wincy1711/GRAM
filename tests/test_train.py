@@ -185,3 +185,82 @@ def test_config_overrides_are_applied():
     assert config.eval.num_samples == 9
     with pytest.raises(KeyError):
         apply_overrides(config, {"model.nope": 1})
+
+
+def test_without_deep_supervision_the_recursion_still_runs_to_full_depth(
+        nqueens_dir, tmp_path, monkeypatch):
+    """The Looped-TF ablation applies the loss once, but at full depth."""
+    calls = {"forward": 0, "backward": 0}
+    config = tiny_experiment(nqueens_dir, tmp_path / "run", n_supervision=4,
+                             deep_supervision=False)
+    model = GRAM(config.model)
+    optimizer = build_optimizer(model, config.train)
+
+    original_forward = GRAM.forward
+
+    def counting_forward(self, *args, **kwargs):
+        calls["forward"] += 1
+        return original_forward(self, *args, **kwargs)
+
+    monkeypatch.setattr(GRAM, "forward", counting_forward)
+    original_backward = torch.Tensor.backward
+
+    def counting_backward(self, *args, **kwargs):
+        calls["backward"] += 1
+        return original_backward(self, *args, **kwargs)
+
+    monkeypatch.setattr(torch.Tensor, "backward", counting_backward)
+
+    dataset = PuzzleDataset(nqueens_dir, "train")
+    batch = {"inputs": dataset.inputs[:4], "targets": dataset.targets[:4],
+             "puzzle_ids": dataset.puzzle_ids[:4]}
+    train_batch(model, batch, config, optimizer, torch.device("cpu"), 0)
+
+    # 4 supervision steps for the ELBO rollout + 4 for the prior head rollout.
+    assert calls["forward"] == 8
+    # One ELBO backward (not four) plus the auxiliary-head backward.
+    assert calls["backward"] == 2
+
+
+def test_deep_supervision_backwards_every_step(nqueens_dir, tmp_path, monkeypatch):
+    calls = {"backward": 0}
+    original_backward = torch.Tensor.backward
+
+    def counting_backward(self, *args, **kwargs):
+        calls["backward"] += 1
+        return original_backward(self, *args, **kwargs)
+
+    monkeypatch.setattr(torch.Tensor, "backward", counting_backward)
+    config = tiny_experiment(nqueens_dir, tmp_path / "run", n_supervision=4)
+    model = GRAM(config.model)
+    optimizer = build_optimizer(model, config.train)
+    dataset = PuzzleDataset(nqueens_dir, "train")
+    batch = {"inputs": dataset.inputs[:4], "targets": dataset.targets[:4],
+             "puzzle_ids": dataset.puzzle_ids[:4]}
+    train_batch(model, batch, config, optimizer, torch.device("cpu"), 0)
+    assert calls["backward"] == 5  # 4 supervision steps + auxiliary heads
+
+
+def test_sequence_mixer_width_follows_the_dataset(tmp_path):
+    """A stale auto-sized mixer would silently keep the config file's length."""
+    gc.build(tmp_path / "gc", n=6, num_instances=25, seed=1, min_solutions=2)
+    config = tiny_experiment(tmp_path / "gc", tmp_path / "run", mixer="mlp",
+                             pos_encoding="learned")
+    assert config.model.seq_mixer_hidden == 36  # from the config's seq_len
+    trainer = Trainer(config)
+    assert trainer.model.config.seq_len == 15
+    assert trainer.model.config.seq_mixer_hidden == 15
+
+
+def test_overrides_resize_the_sequence_mixer():
+    config = ExperimentConfig(model=ModelConfig(mixer="mlp", seq_len=8))
+    assert config.model.seq_mixer_hidden == 8
+    apply_overrides(config, {"model.seq_len": 20})
+    assert config.model.seq_mixer_hidden == 20
+    apply_overrides(config, {"model.seq_len": 30, "model.seq_mixer_hidden": 64})
+    assert config.model.seq_mixer_hidden == 64
+
+
+def test_cosine_schedule_is_safe_without_total_steps():
+    config = TrainConfig(lr=1e-3, warmup_steps=0, lr_min_ratio=0.1)
+    assert lr_at(5, config) == pytest.approx(1e-3)

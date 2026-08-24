@@ -56,7 +56,7 @@ def balanced_kl(posterior: Gaussian, prior: Gaussian, kl_balance: float = 0.8,
     if posterior is None or prior is None:
         return torch.zeros((), device=_any_device(posterior, prior))
 
-    if _is_degenerate(prior) or _is_degenerate(posterior):
+    if prior.degenerate or posterior.degenerate:
         # ``guidance="guide_only"`` makes both distributions Dirac deltas; the KL
         # is then only defined in the limit.  We use the squared mean distance,
         # which is the sigma -> 1 limit of the Gaussian KL.
@@ -73,10 +73,6 @@ def balanced_kl(posterior: Gaussian, prior: Gaussian, kl_balance: float = 0.8,
         kl = torch.clamp(kl, min=free_bits)
     # Sum over latent dimensions, average over batch and sequence positions.
     return kl.sum(-1).mean()
-
-
-def _is_degenerate(dist: Gaussian) -> bool:
-    return bool(torch.all(dist.std <= 0).item())
 
 
 def _any_device(*dists) -> torch.device:

@@ -81,7 +81,26 @@ def test_kl_balance_weights_the_two_directions():
 
 
 def test_degenerate_kl_falls_back_to_squared_distance():
-    q = Gaussian(torch.ones(1, 4), torch.zeros(1, 4))
-    p = Gaussian(torch.zeros(1, 4), torch.zeros(1, 4))
+    q = Gaussian(torch.ones(1, 4), torch.zeros(1, 4), degenerate=True)
+    p = Gaussian(torch.zeros(1, 4), torch.zeros(1, 4), degenerate=True)
     assert torch.isfinite(balanced_kl(q, p))
     assert balanced_kl(q, p).item() == pytest.approx(2.0)
+
+
+def test_guide_only_head_marks_its_distribution_degenerate():
+    """The sigma = 0 ablation must stay finite through the real code path."""
+    transition = StochasticTransition(16, 16, "guide_only")
+    with torch.no_grad():
+        for param in transition.parameters():
+            param.add_(torch.randn_like(param) * 0.1)
+    u = torch.randn(2, 3, 16)
+    y = torch.randn(2, 3, 16)
+    _, prior, posterior = transition(u, y, use_posterior=True)
+    assert prior.degenerate and posterior.degenerate
+    assert torch.isfinite(balanced_kl(posterior, prior))
+
+
+def test_full_guidance_is_not_marked_degenerate():
+    transition = StochasticTransition(16, 16, "full")
+    _, prior, _ = transition(torch.randn(2, 3, 16))
+    assert not prior.degenerate

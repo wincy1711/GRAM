@@ -1,0 +1,2 @@
+[gram] task=graph_coloring params=428.7K device=cpu guidance=full N_sup=4 K=2 T=2
+  epoch     4 | loss 0.9043 | rec 0.6645 | kl 0.0025 | train_acc 0.052 | test_acc 0.094 | valid 0.283

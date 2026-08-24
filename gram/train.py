@@ -65,7 +65,7 @@ def lr_at(step: int, config) -> float:
     """Linear warm-up followed by cosine decay to ``lr * lr_min_ratio``."""
     if config.warmup_steps > 0 and step < config.warmup_steps:
         return config.lr * (step + 1) / config.warmup_steps
-    if config.lr_min_ratio >= 1.0:
+    if config.lr_min_ratio >= 1.0 or config.total_steps <= 0:
         return config.lr
     total = max(1, config.total_steps - config.warmup_steps)
     progress = min(1.0, (step - config.warmup_steps) / total)
@@ -108,7 +108,12 @@ def train_batch(model: GRAM, batch: Dict[str, Tensor], config: ExperimentConfig,
 
     state = model.initial_state(inputs.shape[0])
 
-    n_sup = model.config.n_supervision if model.config.deep_supervision else 1
+    # Without deep supervision (the Looped-Transformer baseline) the recursion
+    # still runs to full depth, but the objective is applied only once, after
+    # the final supervision step.
+    n_sup = model.config.n_supervision
+    supervise_from = 0 if model.config.deep_supervision else n_sup - 1
+    n_supervised = n_sup - supervise_from
     optimizer.zero_grad(set_to_none=True)
 
     stats = BatchStats()
@@ -116,26 +121,32 @@ def train_batch(model: GRAM, batch: Dict[str, Tensor], config: ExperimentConfig,
     correctness: List[Tensor] = []
     accuracies: List[Tensor] = []
 
-    for _ in range(n_sup):
+    for step in range(n_sup):
+        supervised = step >= supervise_from
         # The embeddings are recomputed each supervision step so that every step
         # contributes its own gradient to the encoder and no autograd graph is
         # shared across the per-step backward passes.
-        x_embed = model.encode_input(inputs, puzzle_ids)
-        y_embed = model.encode_target(targets)
-        out = model(
-            state,
-            x_embed,
-            y_embed=y_embed,
-            use_posterior=model.config.is_stochastic,
-            grad_last_only=True,
-            with_heads=False,
-        )
-        step_loss = supervision_step_loss(
-            out.logits, targets, out.transitions,
-            beta=train_cfg.beta, kl_balance=train_cfg.kl_balance,
-            free_bits=train_cfg.free_bits, ignore_index=ignore_index,
-        )
-        (step_loss.total / n_sup).backward()
+        with torch.set_grad_enabled(supervised):
+            x_embed = model.encode_input(inputs, puzzle_ids)
+            y_embed = model.encode_target(targets)
+            out = model(
+                state,
+                x_embed,
+                y_embed=y_embed,
+                use_posterior=model.config.is_stochastic,
+                grad_last_only=True,
+                with_heads=False,
+            )
+        if supervised:
+            step_loss = supervision_step_loss(
+                out.logits, targets, out.transitions,
+                beta=train_cfg.beta, kl_balance=train_cfg.kl_balance,
+                free_bits=train_cfg.free_bits, ignore_index=ignore_index,
+            )
+            (step_loss.total / n_supervised).backward()
+            stats.loss += float(step_loss.total.detach()) / n_supervised
+            stats.reconstruction += float(step_loss.reconstruction) / n_supervised
+            stats.kl += float(step_loss.kl) / n_supervised
 
         with torch.no_grad():
             predictions = out.logits.argmax(-1)
@@ -146,9 +157,6 @@ def train_batch(model: GRAM, batch: Dict[str, Tensor], config: ExperimentConfig,
             correctness.append(seq_correct)
             accuracies.append(token_acc)
 
-        stats.loss += float(step_loss.total.detach()) / n_sup
-        stats.reconstruction += float(step_loss.reconstruction) / n_sup
-        stats.kl += float(step_loss.kl) / n_sup
         state = out.state.detach()
 
     stats.accuracy = float(correctness[-1].mean())
@@ -263,13 +271,14 @@ class Trainer:
             num_workers=config.train.num_workers,
         )
         steps_per_epoch = max(1, len(self.train_loader))
-        config.train.total_steps = steps_per_epoch * config.train.epochs  # type: ignore[attr-defined]
+        config.train.total_steps = steps_per_epoch * config.train.epochs
         self.global_step = 0
 
     # ------------------------------------------------------------------ #
     def _sync_config_with_data(self) -> None:
         """Make the model config agree with the dataset that was built."""
         model_cfg = self.config.model
+        auto_seq_mixer = model_cfg.seq_mixer_hidden == model_cfg.total_seq_len
         model_cfg.vocab_size = self.metadata.vocab_size
         if model_cfg.patch_encoder is not None and model_cfg.patch_encoder.enabled:
             side = model_cfg.patch_encoder.image_size // model_cfg.patch_encoder.patch_size
@@ -279,6 +288,8 @@ class Trainer:
         model_cfg.num_puzzle_identifiers = max(
             model_cfg.num_puzzle_identifiers, self.metadata.num_puzzle_identifiers
         )
+        if auto_seq_mixer:
+            model_cfg.seq_mixer_hidden = None  # re-derive from the new length
         model_cfg.__post_init__()
         self.ignore_index = self.metadata.ignore_label_id
 
