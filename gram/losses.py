@@ -172,5 +172,4 @@ __all__ = [
     "reconstruction_loss",
     "supervision_step_loss",
     "transition_kl",
-    "supervision_step_loss",
 ]

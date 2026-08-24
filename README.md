@@ -164,6 +164,15 @@ deterministic model converges quickly onto a single mode, while GRAM is
 solving the harder problem of representing the whole solution set — and it is
 doing so with a 0.4 M-parameter model where the paper uses 10 M.
 
+**Depth extrapolation does not come for free at this size.** Sweeping
+`--depths 2 4 8 16` on a model trained with `N_sup = 4` peaks at the trained
+depth (exact 0.208) and degrades beyond it (0.094 at depth 16). The paper
+reports the opposite on MNIST generation — quality improving monotonically from
+8 to 256 steps, well past the 16 used in training (Table 2) — but that is a
+converged 12.7 M-parameter model. The depth axis is wired up and sweepable
+here; this particular checkpoint is simply not good enough to extrapolate along
+it.
+
 **The truncated surrogate tracks the full bound** (Appendix A.3). On the same
 checkpoint, `--elbo` reports a full-trajectory KL of 0.649 summed over all 8
 transitions against ~0.264 for the 4 that the surrogate actually penalises —
