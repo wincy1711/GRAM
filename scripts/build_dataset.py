@@ -47,6 +47,8 @@ def main() -> None:
     p.add_argument("--test-fraction", type=float, default=0.035)
     p.add_argument("--min-solutions", type=int, default=2)
     p.add_argument("--max-solutions", type=int, default=None)
+    p.add_argument("--max-targets", type=int, default=32,
+                   help="cap on distinct training targets stored per input")
     p.add_argument("--seed", type=int, default=0)
 
     p = sub.add_parser("sudoku")
@@ -90,6 +92,7 @@ def main() -> None:
             num_instances=args.num_instances, test_fraction=args.test_fraction,
             seed=args.seed, min_solutions=args.min_solutions,
             max_solutions=args.max_solutions,
+            max_train_targets_per_input=args.max_targets,
         )
     elif args.task == "sudoku":
         if args.train_csv:

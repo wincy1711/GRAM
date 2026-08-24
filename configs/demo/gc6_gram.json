@@ -1,0 +1,49 @@
+{
+  "name": "gc6_demo_gram",
+  "task": "graph_coloring",
+  "data_dir": "data/gc6_demo",
+  "output_dir": "runs/gc6_demo_gram",
+  "model": {
+    "hidden_size": 128,
+    "num_heads": 4,
+    "ffn_hidden_size": 128,
+    "num_layers": 1,
+    "mixer": "attention",
+    "pos_encoding": "rope",
+    "hierarchical": true,
+    "low_level_steps": 2,
+    "high_level_steps": 2,
+    "n_supervision": 4,
+    "deep_supervision": true,
+    "guidance": "full",
+    "use_act": true,
+    "act_mode": "halt_only",
+    "use_lprm": true,
+    "vocab_size": 6,
+    "seq_len": 15
+  },
+  "train": {
+    "batch_size": 256,
+    "lr": 0.0007,
+    "weight_decay": 1.0,
+    "grad_clip": 1.0,
+    "warmup_steps": 40,
+    "beta": 0.5,
+    "kl_balance": 0.8,
+    "ema_decay": 0.999,
+    "seed": 0,
+    "device": "auto",
+    "eval_interval": 4,
+    "log_interval": 36,
+    "checkpoint_interval": 20,
+    "head_rollout": "prior",
+    "epochs": 40
+  },
+  "eval": {
+    "num_samples": 20,
+    "selection": "majority",
+    "use_act": true,
+    "batch_size": 64,
+    "coverage_samples": 20
+  }
+}
