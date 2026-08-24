@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from gram.data import arc, graph_coloring as gc, nqueens as nq, sudoku as sd
 from gram.data.base import PuzzleDataset, SolutionIndex

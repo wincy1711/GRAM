@@ -92,3 +92,17 @@ def test_predict_end_to_end():
     model = make()
     out = predict(model, torch.randint(0, 5, (2, 10)), config=EvalConfig(num_samples=3))
     assert out.shape == (2, 10)
+
+
+def test_trace_records_the_refinement_process():
+    """Figure 6 visualises how the prediction evolves over recursion steps."""
+    model = make(n_supervision=5)
+    out = sample_trajectories(model, torch.randint(0, 5, (2, 10)), num_samples=3,
+                              use_act=False, return_all_steps=True)
+    assert out.trace is not None
+    assert out.trace.shape == (5, 2, 3, 10)
+
+
+def test_trace_is_absent_by_default():
+    model = make()
+    assert sample_trajectories(model, torch.randint(0, 5, (2, 10))).trace is None

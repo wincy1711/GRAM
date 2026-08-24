@@ -10,7 +10,6 @@ from gram.data import mnist
 from gram.data.base import PuzzleDataset
 from gram.inference import generate
 from gram.metrics import frechet_distance, inception_score
-from gram.model import GRAM
 from gram.train import Trainer
 
 

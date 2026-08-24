@@ -11,10 +11,9 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 
 import numpy as np
-import torch
 from torch import Tensor
 
 from .data import graph_coloring as gc

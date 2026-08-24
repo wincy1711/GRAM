@@ -1,11 +1,9 @@
 """Coverage for the unconditional generation path of Section 4.3 / Appendix D.5."""
 
 import numpy as np
-import torch
 
 from gram.config import EvalConfig, ExperimentConfig, ModelConfig, TrainConfig
 from gram.data import sudoku as sd
-from gram.data.base import PuzzleDataset
 from gram.inference import generate
 from gram.metrics import sudoku_validity
 from gram.train import Trainer

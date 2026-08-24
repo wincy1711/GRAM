@@ -29,7 +29,7 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from gram.config import EvalConfig, ExperimentConfig  # noqa: E402
+from gram.config import ExperimentConfig  # noqa: E402
 from gram.data.base import PuzzleDataset  # noqa: E402
 from gram.evaluate import evaluate, full_elbo, scaling_sweep  # noqa: E402
 from gram.inference import generate  # noqa: E402

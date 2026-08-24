@@ -2,7 +2,6 @@ import pytest
 import torch
 
 from gram.config import ModelConfig, PatchEncoderConfig
-from gram.core import RecursiveCore
 from gram.model import GRAM
 
 

@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 import torch
-import torch.nn.functional as F
 from torch import Tensor, nn
 
 from .config import ModelConfig, PatchEncoderConfig

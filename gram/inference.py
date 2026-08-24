@@ -18,7 +18,6 @@ import torch
 from torch import Tensor
 
 from .config import EvalConfig
-from .core import LatentState
 from .model import GRAM
 
 
@@ -33,6 +32,7 @@ class TrajectoryOutput:
     logits: Tensor  # [B, N, L, V] logits at the halting step
     values: Optional[Tensor]  # [B, N] LPRM estimates
     halt_steps: Tensor  # [B, N] supervision step at which each trajectory halted
+    trace: Optional[Tensor] = None  # [steps, B, N, L] per-step predictions
 
 
 @torch.no_grad()
@@ -116,7 +116,7 @@ def sample_trajectories(model: GRAM, inputs: Tensor, puzzle_ids: Optional[Tensor
         halt_steps=halt_steps.view(batch_size, num_samples),
     )
     if return_all_steps:
-        result.trace = torch.stack(trace, dim=0)  # type: ignore[attr-defined]
+        result.trace = torch.stack(trace, dim=0)
     return result
 
 

@@ -14,14 +14,13 @@ from __future__ import annotations
 
 import math
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 import torch
-import torch.nn.functional as F
-from torch import Tensor, nn
+from torch import Tensor
 from torch.utils.data import DataLoader
 
 from .config import ExperimentConfig
@@ -30,7 +29,7 @@ from .ema import ModelEMA
 from .evaluate import evaluate
 from .losses import act_loss, lprm_loss, supervision_step_loss
 from .model import GRAM
-from .utils import JsonlLogger, autocast_dtype, human_count, resolve_device, set_seed
+from .utils import JsonlLogger, human_count, resolve_device, set_seed
 
 
 # --------------------------------------------------------------------------- #
@@ -354,7 +353,6 @@ class Trainer:
 
     # ------------------------------------------------------------------ #
     def evaluate(self) -> Dict[str, float]:
-        eval_cfg = self.config.eval
         if self.ema is not None:
             with self.ema.average_parameters(self.model):
                 return evaluate(self.model, self.test_dataset, self.config)
