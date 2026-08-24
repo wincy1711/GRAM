@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import random
 from pathlib import Path
@@ -29,7 +30,21 @@ def resolve_device(device: str = "auto") -> torch.device:
 
 
 def autocast_dtype(name: str) -> Optional[torch.dtype]:
-    return {"bf16": torch.bfloat16, "fp16": torch.float16, "none": None}[name]
+    """Resolve the configured mixed-precision dtype (``None`` disables it)."""
+    try:
+        return {"bf16": torch.bfloat16, "none": None}[name]
+    except KeyError:
+        raise ValueError(
+            f"unknown amp_dtype {name!r}; expected 'bf16' or 'none'"
+        ) from None
+
+
+def autocast(device: torch.device, name: str):
+    """Context manager for mixed precision, a no-op when disabled."""
+    dtype = autocast_dtype(name)
+    if dtype is None:
+        return contextlib.nullcontext()
+    return torch.autocast(device_type=device.type, dtype=dtype)
 
 
 class JsonlLogger:
@@ -51,4 +66,5 @@ def human_count(n: int) -> str:
     return str(n)
 
 
-__all__ = ["JsonlLogger", "autocast_dtype", "human_count", "resolve_device", "set_seed"]
+__all__ = ["JsonlLogger", "autocast", "autocast_dtype", "human_count",
+           "resolve_device", "set_seed"]

@@ -29,7 +29,7 @@ from .ema import ModelEMA
 from .evaluate import evaluate
 from .losses import act_loss, lprm_loss, supervision_step_loss
 from .model import GRAM
-from .utils import JsonlLogger, human_count, resolve_device, set_seed
+from .utils import JsonlLogger, autocast, human_count, resolve_device, set_seed
 
 
 # --------------------------------------------------------------------------- #
@@ -125,7 +125,7 @@ def train_batch(model: GRAM, batch: Dict[str, Tensor], config: ExperimentConfig,
         # The embeddings are recomputed each supervision step so that every step
         # contributes its own gradient to the encoder and no autograd graph is
         # shared across the per-step backward passes.
-        with torch.set_grad_enabled(supervised):
+        with torch.set_grad_enabled(supervised), autocast(device, train_cfg.amp_dtype):
             x_embed = model.encode_input(inputs, puzzle_ids)
             y_embed = model.encode_target(targets)
             out = model(
@@ -138,7 +138,7 @@ def train_batch(model: GRAM, batch: Dict[str, Tensor], config: ExperimentConfig,
             )
         if supervised:
             step_loss = supervision_step_loss(
-                out.logits, targets, out.transitions,
+                out.logits.float(), targets, out.transitions,
                 beta=train_cfg.beta, kl_balance=train_cfg.kl_balance,
                 free_bits=train_cfg.free_bits, ignore_index=ignore_index,
             )

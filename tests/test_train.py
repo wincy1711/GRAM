@@ -298,3 +298,26 @@ def test_train_batch_preserves_the_model_mode(nqueens_dir, tmp_path):
              "puzzle_ids": dataset.puzzle_ids[:4]}
     train_batch(model, batch, config, optimizer, torch.device("cpu"), 0)
     assert model.training
+
+
+def test_autocast_dtype_resolution():
+    from gram.utils import autocast, autocast_dtype
+    assert autocast_dtype("none") is None
+    assert autocast_dtype("bf16") is torch.bfloat16
+    with pytest.raises(ValueError):
+        autocast_dtype("fp16")
+    with autocast(torch.device("cpu"), "none"):
+        pass  # a no-op context, not an error
+
+
+def test_bf16_training_step(nqueens_dir, tmp_path):
+    """bf16 needs no gradient scaler, so a step must stay finite as-is."""
+    config = tiny_experiment(nqueens_dir, tmp_path / "run")
+    config.train.amp_dtype = "bf16"
+    model = GRAM(config.model)
+    optimizer = build_optimizer(model, config.train)
+    dataset = PuzzleDataset(nqueens_dir, "train")
+    batch = {"inputs": dataset.inputs[:4], "targets": dataset.targets[:4],
+             "puzzle_ids": dataset.puzzle_ids[:4]}
+    stats = train_batch(model, batch, config, optimizer, torch.device("cpu"), 0)
+    assert np.isfinite(stats.loss) and stats.grad_norm > 0

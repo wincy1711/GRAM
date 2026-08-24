@@ -146,7 +146,10 @@ class TrainConfig:
     eval_samples: int = 1  # trajectories drawn per test input during eval
     eval_full_elbo: bool = False
     total_steps: int = 0  # filled in by the Trainer; used by the cosine schedule
-    amp_dtype: str = "none"  # none | bf16 | fp16
+    # Mixed precision. bf16 needs no gradient scaler, which matters here because
+    # the loss is backwarded once per supervision step; fp16 is deliberately not
+    # offered rather than offered without a scaler.
+    amp_dtype: str = "none"  # none | bf16
     puzzle_emb_lr: Optional[float] = None  # separate LR for puzzle embeddings
 
 
