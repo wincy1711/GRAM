@@ -119,3 +119,18 @@ def test_config_rejects_bad_values():
 def test_mlp_mixer_forces_learned_positions():
     config = ModelConfig(mixer="mlp", pos_encoding="rope", seq_len=8)
     assert config.pos_encoding == "learned"
+
+
+def test_lm_head_variants_produce_the_same_shape():
+    """Appendix B.1 says SwiGLU, Table 4 says Linear; both are supported."""
+    for head in ("linear", "swiglu"):
+        model = make(lm_head=head)
+        x = torch.randint(0, 6, (2, 12))
+        out = model(model.initial_state(2), model.encode_input(x))
+        assert out.logits.shape == (2, 12, 6)
+    assert make(lm_head="swiglu").num_parameters() > make(lm_head="linear").num_parameters()
+
+
+def test_unknown_lm_head_is_rejected():
+    with pytest.raises(ValueError):
+        ModelConfig(lm_head="mlp")

@@ -68,6 +68,11 @@ class ModelConfig:
     # plain learned embedding of y.  Enable this to add a SwiGLU projection.
     posterior_target_proj: bool = False
 
+    # --- decoder ------------------------------------------------------------ #
+    # Appendix B.1 describes a SwiGLU MLP head while Table 4 lists
+    # ``Linear(D -> vocab)``; Table 4 is the default.
+    lm_head: str = "linear"  # linear | swiglu
+
     # --- auxiliary heads ---------------------------------------------------- #
     use_act: bool = True
     act_mode: str = "halt_only"  # halt_only | q_learning
@@ -90,6 +95,8 @@ class ModelConfig:
             raise ValueError(f"unknown guidance mode {self.guidance!r}")
         if self.act_mode not in ("halt_only", "q_learning"):
             raise ValueError(f"unknown act_mode {self.act_mode!r}")
+        if self.lm_head not in ("linear", "swiglu"):
+            raise ValueError(f"unknown lm_head {self.lm_head!r}")
         if self.mixer == "mlp" and self.pos_encoding == "rope":
             # RoPE is only meaningful inside attention.
             self.pos_encoding = "learned"

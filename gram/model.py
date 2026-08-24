@@ -148,6 +148,9 @@ class Decoder(nn.Module):
             self.head = PatchDecoder(
                 config.patch_encoder, config.hidden_size, config.vocab_size
             )
+        elif config.lm_head == "swiglu":
+            self.head = SwiGLU(config.hidden_size, config.ffn_hidden_size,
+                               config.vocab_size)
         else:
             self.head = CastedLinear(config.hidden_size, config.vocab_size)
 

@@ -368,6 +368,9 @@ here are listed so they are easy to change:
 6. **Halt-head loss.** Binary cross-entropy on the Q-logits, as in HRM, rather
    than the squared error literally written in Eq. (15) — `σ(q_halt)` at
    inference implies the head outputs logits.
+7. **LM head.** Appendix B.1 describes a SwiGLU MLP head while Table 4 lists
+   `Linear(D → vocab)`. The default follows Table 4;
+   `model.lm_head="swiglu"` selects the other reading.
 
 ## Citation
 
