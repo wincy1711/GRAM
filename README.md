@@ -34,6 +34,7 @@ depth *and* the number of trajectories sampled in parallel.
 | Full trajectory ELBO, Eq. (13) — the Appendix A.3 diagnostic | [`gram/evaluate.py`](gram/evaluate.py) |
 | Tasks: Sudoku, N-Queens, Graph Coloring, binarised MNIST, ARC-AGI | [`gram/data/`](gram/data) |
 | Metrics: accuracy, coverage, conflict edges, validity, IS/FID | [`gram/metrics.py`](gram/metrics.py) |
+| Latent trajectory analysis (PCA projection), Appendix D.6 | [`gram/analysis.py`](gram/analysis.py) |
 | Ablations of Table 3 (architecture and mechanism) | [`configs/ablations/`](configs/ablations) |
 
 ## Install
@@ -105,6 +106,26 @@ trajectories into the batch dimension, so width costs one forward pass, not
 `N`. Candidates are reduced by majority voting or by best-of-N with the LPRM
 value head. Depth is controlled by `n_supervision` and optionally cut short per
 trajectory by the ACT halt head.
+
+## Looking at the trajectories
+
+`scripts/visualize_trajectories.py` samples many prior trajectories for one
+problem, projects the high-level state to 2-D with PCA, and writes a
+standalone SVG (Appendix D.6, Figures 18–19):
+
+```bash
+python scripts/visualize_trajectories.py --checkpoint runs/nqueens8/best.pt \
+    --num-samples 50 --output runs/nqueens8/trajectories.svg
+```
+
+It also reports `spread_per_step` — the mean pairwise distance between
+trajectories at each recursion step — and how many *distinct* answers the
+samples produced. On a deterministic checkpoint both collapse:
+
+```
+"guidance": "none", "spread_per_step": [0.0, 0.0, 0.0, 0.0],
+"distinct_final_predictions": 1        # from 30 sampled trajectories
+```
 
 ## Configuration
 
@@ -228,7 +249,9 @@ gram/                 the library
   ema.py, utils.py    EMA weights, seeding, device selection, JSONL logging
   data/               per-task generators, loaders and tokenisation
 configs/              per-task configs, ablations/, demo/
-scripts/              build_dataset, train, evaluate, summarize, reproduce.sh
+  analysis.py         trajectory collection, PCA projection, SVG rendering
+scripts/              build_dataset, train, evaluate, summarize,
+                      visualize_trajectories, reproduce.sh
 tests/                104 unit and integration tests
 docs/tuning.md        choosing beta, diagnosing a run
 ```
