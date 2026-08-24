@@ -138,43 +138,47 @@ therefore one outcome, good or bad.
 The paper's headline numbers need 8× RTX 4090 (Appendix B.2). What follows was
 produced by this code on a 4-core CPU, on the 6-vertex Graph Coloring demo:
 a 0.4 M-parameter model (`D = 128`, `K = 2`, `T = 2`, `N_sup = 4`) trained for
-40 epochs on 5.9 K examples. The *scale* is nothing like the paper's; the
-*qualitative behaviour* is the thing being checked.
+40 epochs on 5.9 K examples, then evaluated 5 times independently. The *scale*
+is nothing like the paper's; the *qualitative behaviour* is the thing being
+checked.
 
-**Deterministic recursion gets nothing from width** — Figure 1(a) and Figure 4.
-Evaluated at N = 1, 5 and 20 parallel trajectories, `guidance="none"` returns
-literally the same answer every time:
+**Deterministic recursion gets nothing from width, and nothing from resampling
+at all** — Figure 1(a) and Figure 4. Every number below has a standard
+deviation of exactly zero across the 5 evaluations, and is identical at N = 1,
+5 and 20 parallel trajectories:
 
-| N | exact | valid | coverage | diversity |
-| --- | --- | --- | --- | --- |
-| 1 | 0.415 | 0.585 | – | 1.00 |
-| 5 | 0.415 | 0.585 | 0.105 | 0.20 |
-| 20 | 0.415 | 0.585 | 0.105 | 0.05 |
+| N | exact | valid | coverage | conflicts ↓ | diversity |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 0.415 ± 0.000 | 0.585 ± 0.000 | – | 0.509 ± 0.000 | 1.000 |
+| 5 | 0.415 ± 0.000 | 0.585 ± 0.000 | 0.105 ± 0.000 | 0.509 ± 0.000 | 0.200 |
+| 20 | 0.415 ± 0.000 | 0.585 ± 0.000 | 0.105 ± 0.000 | 0.509 ± 0.000 | 0.050 |
 
-`diversity = 1/N` at every width: all 20 samples are one trajectory. Sampling
-50 trajectories through `scripts/visualize_trajectories.py` gives
-`spread_per_step: [0, 0, 0, 0]` and a single distinct prediction.
+`diversity = 1/N` at every width: all 20 "samples" are one trajectory.
+`scripts/visualize_trajectories.py` on the same checkpoint gives
+`spread_per_step: [0, 0, 0, 0]` and one distinct prediction from 50 draws.
 
 **GRAM scales with width.** The same backbone with `guidance="full"`:
 
 | N | exact | valid | coverage | conflicts ↓ | diversity |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 0.132 | 0.321 | – | 0.943 | 1.00 |
-| 5 | 0.151 | 0.302 | 0.198 | 0.981 | 0.70 |
-| 20 | 0.189 | 0.377 | 0.318 | 0.868 | 0.42 |
+| 1 | 0.185 ± 0.056 | 0.408 ± 0.051 | – | 0.830 ± 0.125 | 1.000 |
+| 5 | 0.215 ± 0.031 | 0.415 ± 0.041 | 0.179 ± 0.017 | 0.815 ± 0.085 | 0.706 |
+| 20 | 0.215 ± 0.028 | 0.419 ± 0.042 | 0.338 ± 0.021 | 0.777 ± 0.035 | 0.408 |
 
-Accuracy rises with the number of sampled trajectories, coverage rises from
-0.198 to 0.318, and conflict edges fall — the second scaling axis of
-Section 2.3, which the deterministic model does not have. At matched training
-budget GRAM reaches **3.7× the solution coverage** of its deterministic
-ablation (0.341 vs 0.091), which is the multi-solution result of Table 1 and
-Figure 4 (right).
+Accuracy rises with the number of sampled trajectories, coverage nearly doubles
+from N = 5 to N = 20, and conflict edges fall — the second scaling axis of
+Section 2.3, which the deterministic model does not have. At N = 20 GRAM
+recovers **3.2× the solution coverage** of its deterministic ablation
+(0.338 vs 0.105) with **8× the sample diversity**, which is the multi-solution
+result of Table 1 and Figure 4 (right).
 
 Single-sample accuracy is *lower* than the deterministic baseline at this size.
-That is expected: with one target sampled per input from many valid ones, the
-deterministic model converges quickly onto a single mode, while GRAM is
-solving the harder problem of representing the whole solution set — and it is
-doing so with a 0.4 M-parameter model where the paper uses 10 M.
+That is expected and is the trade the task poses: each input has ~6 valid
+colourings and the deterministic model converges onto one of them, while GRAM
+spreads its probability mass over the solution set. `exact_match` scores
+agreement with the single stored reference, so it penalises exactly the
+behaviour the paper is after — which is why the multi-solution configs select
+checkpoints on `constraint_accuracy` instead.
 
 **Depth extrapolation does not come for free at this size.** Sweeping
 `--depths 2 4 8 16` on a model trained with `N_sup = 4` peaks at the trained
@@ -191,6 +195,10 @@ transitions against ~0.264 for the 4 that the surrogate actually penalises —
 the gap is the cumulative KL of the earlier transitions, as the paper
 describes, not an optimisation failure.
 
+Training dynamics at this scale need watching: see
+[`docs/tuning.md`](docs/tuning.md) for how the posterior/prior gap widens over
+a run and what to do about it.
+
 Reproduce with:
 
 ```bash
@@ -199,7 +207,7 @@ python scripts/build_dataset.py graph_coloring --output data/gc6_demo \
 python scripts/train.py --config configs/demo/gc6_gram.json
 python scripts/train.py --config configs/demo/gc6_deterministic.json
 python scripts/evaluate.py --checkpoint runs/gc6_demo_gram/best.pt --widths 1 5 20
-python scripts/summarize.py runs/gc6_demo_gram runs/gc6_demo_deterministic
+python scripts/summarize.py runs/gc6_demo_gram runs/gc6_demo_deterministic --best
 ```
 
 ## Configuration
