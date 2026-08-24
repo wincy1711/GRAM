@@ -1,0 +1,49 @@
+{
+  "name": "nqueens8",
+  "task": "nqueens",
+  "data_dir": "data/nqueens8",
+  "output_dir": "runs/nqueens8",
+  "model": {
+    "hidden_size": 512,
+    "num_heads": 8,
+    "ffn_hidden_size": 512,
+    "num_layers": 2,
+    "mixer": "attention",
+    "pos_encoding": "rope",
+    "hierarchical": true,
+    "low_level_steps": 4,
+    "high_level_steps": 3,
+    "n_supervision": 16,
+    "deep_supervision": true,
+    "guidance": "full",
+    "use_act": true,
+    "act_mode": "halt_only",
+    "use_lprm": true,
+    "vocab_size": 3,
+    "seq_len": 64
+  },
+  "train": {
+    "batch_size": 768,
+    "lr": 0.0001,
+    "weight_decay": 1.0,
+    "grad_clip": 1.0,
+    "warmup_steps": 200,
+    "beta": 0.07,
+    "kl_balance": 0.8,
+    "ema_decay": 0.9999,
+    "seed": 0,
+    "device": "auto",
+    "eval_interval": 25,
+    "log_interval": 50,
+    "checkpoint_interval": 500,
+    "head_rollout": "prior",
+    "epochs": 3000
+  },
+  "eval": {
+    "num_samples": 1,
+    "selection": "majority",
+    "use_act": true,
+    "batch_size": 256,
+    "coverage_samples": 20
+  }
+}
